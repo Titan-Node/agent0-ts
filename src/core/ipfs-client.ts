@@ -335,12 +335,20 @@ export class IPFSClient {
     // Build registrations array
     const registrations: Array<Record<string, unknown>> = [];
     if (registrationFile.agentId) {
-      const [, , tokenId] = registrationFile.agentId.split(':');
+      // Parse agentId correctly - format is "chainId:tokenId" (only 2 parts)
+      const parts = registrationFile.agentId.split(':');
+      if (parts.length !== 2) {
+        throw new Error(`Invalid agentId format: ${registrationFile.agentId}. Expected "chainId:tokenId"`);
+      }
+      const tokenId = parseInt(parts[1], 10);
+      if (isNaN(tokenId)) {
+        throw new Error(`Invalid tokenId in agentId: ${registrationFile.agentId}`);
+      }
       const agentRegistry = chainId && identityRegistryAddress
         ? `eip155:${chainId}:${identityRegistryAddress}`
         : `eip155:1:{identityRegistry}`;
       registrations.push({
-        agentId: parseInt(tokenId, 10),
+        agentId: tokenId,
         agentRegistry,
       });
     }
