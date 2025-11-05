@@ -7,6 +7,7 @@
 
 import type { IPFSHTTPClient } from 'ipfs-http-client';
 import type { RegistrationFile } from '../models/interfaces';
+import { EndpointType } from '../models/enums';
 import { IPFS_GATEWAYS, TIMEOUTS } from '../utils/constants';
 
 export interface IPFSClientConfig {
@@ -308,8 +309,14 @@ export class IPFSClient {
     identityRegistryAddress?: string
   ): Promise<string> {
     // Convert from internal format { type, value, meta } to ERC-8004 format { name, endpoint, version }
+    // Filter out wallet endpoints - they're handled separately via agentWallet
     const endpoints: Array<Record<string, unknown>> = [];
     for (const ep of registrationFile.endpoints) {
+      // Skip wallet endpoints - they're handled separately via agentWallet below
+      if (ep.type === EndpointType.WALLET) {
+        continue;
+      }
+      
       const endpointDict: Record<string, unknown> = {
         name: ep.type, // EndpointType enum value (e.g., "MCP", "A2A")
         endpoint: ep.value,
