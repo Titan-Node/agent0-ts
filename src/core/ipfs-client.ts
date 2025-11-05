@@ -340,13 +340,29 @@ export class IPFSClient {
       if (parts.length !== 2) {
         throw new Error(`Invalid agentId format: ${registrationFile.agentId}. Expected "chainId:tokenId"`);
       }
-      const tokenId = parseInt(parts[1], 10);
-      if (isNaN(tokenId)) {
-        throw new Error(`Invalid tokenId in agentId: ${registrationFile.agentId}`);
+      
+      // Parse and validate chainId
+      const chainIdFromAgentId = parseInt(parts[0], 10);
+      if (isNaN(chainIdFromAgentId) || chainIdFromAgentId <= 0) {
+        throw new Error(`Invalid chainId in agentId: ${registrationFile.agentId}. Must be a positive integer`);
       }
-      const agentRegistry = chainId && identityRegistryAddress
-        ? `eip155:${chainId}:${identityRegistryAddress}`
-        : `eip155:1:{identityRegistry}`;
+      
+      // Parse and validate tokenId
+      const tokenId = parseInt(parts[1], 10);
+      if (isNaN(tokenId) || tokenId < 0) {
+        throw new Error(`Invalid tokenId in agentId: ${registrationFile.agentId}. Must be a non-negative integer`);
+      }
+      
+      // Use chainId parameter if provided, otherwise fall back to chainId from agentId
+      // Note: If chainId parameter is provided, we assume it matches the agentId's chainId
+      const effectiveChainId = chainId ?? chainIdFromAgentId;
+      
+      // Build agentRegistry - use provided identityRegistryAddress if available
+      // Otherwise use a placeholder that indicates the chain
+      const agentRegistry = identityRegistryAddress
+        ? `eip155:${effectiveChainId}:${identityRegistryAddress}`
+        : `eip155:${effectiveChainId}:{identityRegistry}`;
+      
       registrations.push({
         agentId: tokenId,
         agentRegistry,
